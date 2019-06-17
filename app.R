@@ -7,6 +7,11 @@
 #    http://shiny.rstudio.com/
 #
 
+packages <- c("ggplot2", "tidyverse", "timeDate", "lubridate", "ggpubr", "plotly", "shiny") 
+if(length(setdiff(packages, rownames(installed.packages()))) > 0){
+    install.packages(setdiff(packages, rownames(installed.packages())))
+}
+
 library(shiny)
 library(tidyverse)
 library(ggplot2)
