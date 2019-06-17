@@ -15,10 +15,10 @@ library(lubridate)
 library(ggpubr)
 library(plotly)
 
-source("/doc/utils.R")
+source("doc/utils.R")
 
 # load data
-setwd("/data/")
+setwd("data/")
 REG.UP <- read_csv("reg.up.price.csv")
 REG.DOWN <- read_csv("reg.down.price.csv")
 RTLMP <- read_csv("RTLMP.price.csv")
