@@ -1,0 +1,155 @@
+---
+title: "battery economic model"
+author: "Tianchen"
+date: "6/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Battery Economic model 
+```{r info=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(timeDate)
+library(ggpubr)
+source("../script/utils.R")
+```
+
+
+```{r load and clean data}
+# remove(reg.down, reg.up, rtlmp)
+REG.UP <- read_csv("reg.up.price.csv")
+REG.DOWN <- read_csv("reg.down.price.csv")
+RTLMP <- read_csv("RTLMP.price.csv")
+
+REG.UP$DATE <- standard.date(REG.UP$X1)$DATE
+REG.UP$TIME <- standard.date(REG.UP$X1)$TIME
+
+REG.DOWN$DATE <- standard.date(REG.DOWN$X1)$DATE
+REG.DOWN$TIME <- standard.date(REG.DOWN$X1)$TIME
+
+RTLMP$DATE <- standard.date(RTLMP$X1)$DATE
+RTLMP$TIME <- standard.date(RTLMP$X1)$TIME
+
+narow <- which(is.na(REG.DOWN$ASM_DA_REGDOWN.ERCOT))
+REG.UP <- REG.UP[-narow,]
+REG.DOWN <- REG.DOWN[-narow,]
+RTLMP <- RTLMP[-narow, ]
+```
+
+```{r}
+RTLMP$WD = as.numeric(unname(isWeekday(RTLMP$DATE)))
+REG.DOWN$WD = as.numeric(unname(isWeekday(REG.DOWN$DATE)))
+REG.UP$WD = as.numeric(unname(isWeekday(REG.UP$DATE)))
+REG.DOWN$MONTH <- month(REG.DOWN$DATE)
+RTLMP$MONTH <- month(RTLMP$DATE)
+REG.UP$MONTH <- month(REG.UP$DATE)
+
+rtlmp$TIME.N <- as.numeric(regmatches(rtlmp$TIME, regexpr("[0-9]+", rtlmp$TIME)))
+
+rtlmp <- RTLMP %>%
+  group_by(TIME, MONTH) %>%
+  summarise(pmean = mean(RTLMP.HB_HOUSTON)) %>%
+  ungroup()
+
+
+rtlmp.plot <- ggplot(rtlmp)+
+  geom_point(aes(x=TIME, y=pmean,  color=as.factor(MONTH)))+
+  geom_line(aes(x=TIME.N, y=pmean, color=as.factor(MONTH)))+
+  # scale_color_discrete(name="WeekDays", labels=c("no", "yes"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title = "RTLMP")
+
+
+##########################
+regup <- REG.UP %>%
+  group_by(TIME, MONTH) %>%
+  summarise(pmean = mean(ASM_DA_REGUP.ERCOT))
+
+regup$TIME.N <- as.numeric(regmatches(regup$TIME, regexpr("[0-9]+", regup$TIME)))
+
+
+regup.plot <- ggplot(regup)+
+  geom_point(aes(x=TIME, y=pmean, color=as.factor(MONTH)))+
+  geom_line(aes(x=TIME.N, y=pmean, color=as.factor(MONTH)))+
+  # scale_color_discrete(name="WeekDays", labels=c("no", "yes"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title = "REG.UP")
+
+##############################
+regdown <- REG.DOWN %>%
+  group_by(TIME, MONTH) %>%
+  summarise(pmean = mean(ASM_DA_REGDOWN.ERCOT))
+
+regdown$TIME.N <- as.numeric(regmatches(regdown$TIME, regexpr("[0-9]+", regdown$TIME)))
+
+
+regdown.plot<- ggplot(regdown)+
+  geom_point(aes(x=TIME, y=pmean, color=as.factor(MONTH)))+
+  geom_line(aes(x=TIME.N, y=pmean, color=as.factor(MONTH)))+
+  # scale_color_discrete(name="WeekDays", labels=c("no", "yes"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title = "REG.DOWN")
+
+ggarrange(rtlmp.plot, regdown.plot, regup.plot,
+          ncol = 3, common.legend = TRUE, label.x = 0.1)
+```
+
+
+
+
+plot stuff
+```{r}
+cor(REG.UP$ASM_DA_REGUP.ERCOT, RTLMP$RTLMP.HB_HOUSTON)
+cor(REG.DOWN$ASM_DA_REGDOWN.ERCOT, RTLMP$RTLMP.HB_HOUSTON)
+cor(REG.UP$ASM_DA_REGUP.ERCOT, REG.DOWN$ASM_DA_REGDOWN.ERCOT)
+
+n <- 10
+te <- 24 * n
+ggplot(REG.UP[1:te,],aes(color = DATE))+
+  geom_point(aes(x=TIME, y=ASM_DA_REGUP.ERCOT))+
+  geom_line(aes(x=rep(1:24, n), y=ASM_DA_REGUP.ERCOT))+
+  theme(axis.text.x = element_text(angle = 90))
+
+n <- 15
+te <- 24 * n
+ggplot(RTLMP[1:te,],aes(color = DATE))+
+  geom_point(aes(x=TIME, y=RTLMP.HB_HOUSTON))+
+  geom_line(aes(x=rep(1:24, n), y=RTLMP.HB_HOUSTON))+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+flag <- NULL
+for(i in 1:9){
+  if(i < 10) i <- paste0(0,i)
+  flag <- c(flag, which(REG.DOWN$DATE == paste0("2018-",i, "-01"))[1])
+}
+# flag <- c(flag, which(REG.DOWN$DATE == paste0("2018-",12, "-31"))[1])
+
+
+sams <- flag
+for(i in 1:23){
+  sams <- c(sams, flag+i)
+}
+sams <- sort(sams)
+
+ggplot(RTLMP[sams,],aes(color = DATE))+
+  geom_point(aes(x=TIME, y=RTLMP.HB_HOUSTON))+
+  geom_line(aes(x=rep(1:24,length(flag)), y=RTLMP.HB_HOUSTON))+
+  theme(axis.text.x = element_text(angle = 90))
+
+ggplot(REG.UP[sams,],aes(color = DATE))+
+  geom_point(aes(x=TIME, y=ASM_DA_REGUP.ERCOT))+
+  geom_line(aes(x=rep(1:24,length(flag)), y=ASM_DA_REGUP.ERCOT))+
+  theme(axis.text.x = element_text(angle = 90))
+
+ggplot(REG.DOWN[sams,],aes(color = DATE))+
+  geom_point(aes(x=TIME, y=ASM_DA_REGDOWN.ERCOT))+
+  geom_line(aes(x=rep(1:24,length(flag)), y=ASM_DA_REGDOWN.ERCOT))+
+  theme(axis.text.x = element_text(angle = 90))
+```
+
