@@ -102,7 +102,7 @@ ui <- fluidPage(theme = shinytheme("simplex"),
                                                                          height = "600px", width = "100%"))
                                      ),
                                      
-                                     h5("ERCOT Data 2018", style="color:red")
+                                     # h5("ERCOT Data 2018", style="color:red")
                                  )
                              )
                     ),
@@ -193,13 +193,13 @@ server <- function(input, output) {
             if(input$month[1] < 10) i <- paste0(0,input$month[1])
             else i <- input$month[1]
             for (day in days) {
-                flag <- c(flag, which(REG.DOWN()$DATE == paste0("2018-", i, day))[1])
+                flag <- c(flag, which(REG.DOWN()$DATE == paste0(input$year, '-', i, day))[1])
             }
         }
         else{
             for(i in input$month[1]:input$month[2]){
                 if(i < 10) i <- paste0(0,i)
-                flag <- c(flag, which(REG.DOWN()$DATE == paste0("2018-", i, days))[1])
+                flag <- c(flag, which(REG.DOWN()$DATE == paste0(input$year, '-', i, days))[1])
             }
         }
         
