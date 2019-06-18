@@ -102,7 +102,7 @@ ui <- fluidPage(theme = shinytheme("simplex"),
                                                                          height = "600px", width = "100%"))
                                      ),
                                      
-                                     # h5("ERCOT Data 2018", style="color:red")
+                                     h6("ERCOT Data", style="color:red")
                                  )
                              )
                     ),
